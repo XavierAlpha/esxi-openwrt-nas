@@ -1,6 +1,6 @@
 # Openwrt 设置
 ## 首次进入系统
-设置 brd-lan ip 地址
+设置 br-lan ip 地址
 
 - `vi /etc/config/network`
 
