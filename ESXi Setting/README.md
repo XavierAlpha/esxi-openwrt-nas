@@ -61,6 +61,20 @@ wjz304 提供的是 img 镜像文件, 同样需要转化为 xx-thin.vmdk 才能�
 
 笔记本 ---> NAS
 ![](./img/test1.png)
-NAS ---> 笔记本 ![](./img/test2.png)
+
+NAS ---> 笔记本 
+![](./img/test2.png)
 
 > 极轻度依赖 NAS, 凑合用还可以.xD
+
+### 添加 USB 直通也同理
+>略
+
+### 重要: 显卡直通
+> 虽然显卡可以直接在 ESXi 切换直通且显示 "活动", 但每次重启后, 会发现显卡直通显示 "已启用/需要重新引导"
+
+解决方法: 禁用 ESXi 使用核显
+
+进入 SSH 输入命令 `esxcli system settings kernel set -s vga -v FALSE`
+
+恢复命令 `esxcli system settings kernel set -s vga -v TRUE`
