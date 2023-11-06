@@ -4,6 +4,9 @@
 - luci-theme-argon_2.3.1_all.ipk
 - luci-app-uhttpd
 - luci-app-samba4
+- luci-app-dockerman v0.5.26 包含: 1. luci-lib-docker 2. dockered 3. docker 4. luci-lib-jsonc 
+- kmod-tun
+
 
 ### 二级路由设置 ipv6
 通过设置一级软路由的 lan 口 ipv6 dhcp 为 server 模式, 二级硬路由始终无法正确获得 ipv6.
