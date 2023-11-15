@@ -8,3 +8,9 @@
 
 ## 群晖中查看硬盘 SMART 信息
 进入 ssh, sudo -i 切换 root, 运行 `fdisk -l` 查看你的硬盘设备名称,然后 `smartctl -a -d sat /dev/your_sata_device`
+
+
+## VideoStation
+支持 DTS, EAC3 and TrueHD. 参考 [VideoStation-FFMPEG-Patcher](https://github.com/AlexPresso/VideoStation-FFMPEG-Patcher).
+
+添加第三方源 SynoCommunity 时, 如果遇到错误可能的原因是证书配置问题.
