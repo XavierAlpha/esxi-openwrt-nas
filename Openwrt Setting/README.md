@@ -10,12 +10,12 @@
 - 修改源, 比如
 
 ```
-src/gz openwrt_core https://mirrors.cloud.tencent.com/openwrt/releases/23.05.0/targets/x86/64/packages
-src/gz openwrt_base https://mirrors.cloud.tencent.com/openwrt/releases/23.05.0/packages/x86_64/base
-src/gz openwrt_luci https://mirrors.cloud.tencent.com/openwrt/releases/23.05.0/packages/x86_64/luci
-src/gz openwrt_packages https://mirrors.cloud.tencent.com/openwrt/releases/23.05.0/packages/x86_64/packages
-src/gz openwrt_routing https://mirrors.cloud.tencent.com/openwrt/releases/23.05.0/packages/x86_64/routing
-src/gz openwrt_telephony https://mirrors.cloud.tencent.com/openwrt/releases/23.05.0/packages/x86_64/telephony
+src/gz openwrt_core https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/targets/x86/64/packages
+src/gz openwrt_base https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/base
+src/gz openwrt_luci https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/luci
+src/gz openwrt_packages https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/packages
+src/gz openwrt_routing https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/routing
+src/gz openwrt_telephony https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/telephony
 ```
 
 - 主题, 比如 luci-app-argon
@@ -78,8 +78,7 @@ Device       Start      End  Sectors  Size Type
    执行命令 `mkfs.ext4 /dev/sda3` 
 
 4. 回到 "Mount Points"(挂载点) 扩容
-   - 如图所示,![](./img/1.png) 点击 "Generate Config" 先生成一次设置
-   - 再 Add 中添加 /dev/sda3,如图所示 ![](./img/2.png) 作为根文件系统
+   - 在 Add 中添加 /dev/sda3,如图所示 ![](./img/2.png) 作为根文件系统
    - 此时不要急于保存, 先复制 "Root preparation" 所给予的命令, 然后点击右下角保存并应用。
    - **重要** : 更改命令中的 /dev/sda1 为你刚才创建的分区, 此例中为 /dev/sda3,即修改后的命令如下
       ```bash

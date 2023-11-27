@@ -1,10 +1,10 @@
 # 个人使用记录
 
 ### 安装列表
-- luci-theme-argon_2.3.1_all.ipk
-- luci-app-uhttpd
-- luci-app-samba4
-- luci-app-dockerman v0.5.26 包含: 1. luci-lib-docker 2. dockered 3. docker 4. luci-lib-jsonc 
+- luci-app-uhttpd(1st)
+- luci-theme-argon_2.3.1_all.ipk(2st)
+- luci-app-samba4(not used)
+- luci-app-dockerman v0.5.26 包含: luci-lib-docker, ttyd, docker, dockerd, luci-lib-ip
 - kmod-tun
 
 
