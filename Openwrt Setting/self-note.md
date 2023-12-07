@@ -7,6 +7,9 @@
 - luci-app-dockerman v0.5.26 包含: luci-lib-docker, ttyd, docker, dockerd, luci-lib-ip
 - kmod-tun
 
+手动配置新增用户信息, 最小化安装:
+- sudo
+- shadow-su
 
 ### 二级路由设置 ipv6
 通过设置一级软路由的 lan 口 ipv6 dhcp 为 server 模式, 二级硬路由始终无法正确获得 ipv6.

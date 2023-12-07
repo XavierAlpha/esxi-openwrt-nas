@@ -94,3 +94,81 @@ Device       Start      End  Sectors  Size Type
     - 重启, 此时整个根目录被扩容, 如图所示 ![](./img/3.png)
 
 至此, 容量焦虑暂时得到缓解. 记得在 openwrt 中备份设置, 养成良好的习惯.
+
+
+## 添加用户并启用 sudo
+
+1. shadow 家族软件
+
+```
+opkg update
+opkg install shadow-xxx
+```
+这里可能用到的软件
+```
+shadow-useradd
+shadow-userdel
+shadow-groupadd
+shadow-usermod
+shadow-su
+sudo
+```
+1. add user
+    1. 可使用 useradd 命令如 linux 中操作 user.
+    2. 或者手动添加用户信息, 不需要 useradd 命令
+
+        - 创建 /home/yourusername 用户目录.
+        - 修改 /etc/passwd 末尾添加:
+        ```
+        yourusername:x:1000:1000:yourgroupname:/home/yourusername:/bin/bash
+        ```
+        - 同样,添加 /etc/group, /etc/shadow
+        - 更改用户密码 `passwd yourusername`
+2. sudo
+    - sudo with root password
+      
+      修改 /etc/sudoers 并 uncomment 
+      ```
+      Defaults targetpw  # Ask for the password of the target user
+      ALL ALL=(ALL) ALL  # WARNING: only use this together with 'Defaults targetpw'
+      ```
+    - sudo with users's passowrd
+      
+      添加 yourusername ALL=(ALL) ALL
+    - sudo with users passowrd if he is member of group "sudo"
+      
+      需要安装 shadow-groupadd, shadow-usermod.
+      uncomment 
+      ```
+      ## Uncomment to allow members of group sudo to execute any command
+      %sudo ALL=(ALL) ALL 
+      ```
+      添加 "sudo" group 并将 user 添加到 group "sudo" (可手动在 /etc/group 中添加, 这里使用命令)
+      ```
+      groupadd --system sudo
+      usermod -a -G sudo yourusername
+      ```
+
+## WebUI 添加非 root 用户
+> :warning: WARNING: untested
+
+
+- 1 参考链接 [为 OpenWrt 增加用户且开放访问 WebUI 权限](https://www.vvave.net/archives/luci-add-general-login-user-replace-root-in-openwrt.html)
+- 2 forum.openwrt [Full solution](https://forum.openwrt.org/t/solved-luci-add-support-user-in-addition-to-root/17402/3)
+
+> Note: change "support" to required user ID
+> 
+> Full solution:
+> - create support user with UID, GUID = 0 (for full access - change to taste)
+> - alter /usr/lib/lua/luci/controller/admin/index.lua to read:
+"page.sysauth = {"root","support"}" from = "root"
+> - alter /usr/lib/lua/luci/controller/admin/servicectl.lua to read:
+entry({"servicectl"}, alias("servicectl", "status")).sysauth = {"root","support"} from = "root"
+> - NEW: add to /etc/config/rpcd:
+config login
+        option username 'support'
+        option password '$p$support'
+        list read '*'
+        list write '*'
+> - may need to reboot
+
