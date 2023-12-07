@@ -117,13 +117,17 @@ sudo
     1. 可使用 useradd 命令如 linux 中操作 user.
     2. 或者手动添加用户信息, 不需要 useradd 命令
 
-        - 创建 /home/yourusername 用户目录.
         - 修改 /etc/passwd 末尾添加:
         ```
-        yourusername:x:1000:1000:yourgroupname:/home/yourusername:/bin/bash
+        yourusername:x:1000:1000:yourgroupname:/home/yourusername:/bin/ash (or "/bin/bash" when using non-offical openwrt)
         ```
         - 同样,添加 /etc/group, /etc/shadow
+        ```
+        /etc/group: yourusergroup:x:1000:
+        /etc/shadow: USER:any:16666:0:99999:7:::
+        ```
         - 更改用户密码 `passwd yourusername`
+        - 创建 /home/yourusername 用户目录.并修改所属权 `chown yourusername:yourgroupname /home/yourusername`
 2. sudo
     - sudo with root password
       
@@ -172,3 +176,11 @@ config login
         list write '*'
 > - may need to reboot
 
+## 使用 openssh (非必要, 根据习惯)
+openwrt 官方镜像默认使用 dropbear 提供的 ssh 功能(适用于小内存设备轻量级ssh), 可在 webui 上直接配置简单方便, 如果想像 linux 一样使用 openssh, 则需要安装新的软件:
+- openssh-client(非必要)
+- openssh-server
+
+这里直接不使用 dropbear, 在 ui 上 删除 "Dropbear Instance". 在 System/Startup 中 disable dropbear.
+
+然后其他 ssh 操作和在 linux上相同.

@@ -11,6 +11,9 @@
 - sudo
 - shadow-su
 
+openssh and stop dropbear
+- openssh-server
+
 ### 二级路由设置 ipv6
 通过设置一级软路由的 lan 口 ipv6 dhcp 为 server 模式, 二级硬路由始终无法正确获得 ipv6.
 原因可能是: 二级硬路由为 tplink-3010 只能分配 /64 的前缀而软路由中已经被分配了 64 前缀, 这通常是不能由自己设定的, 故无法再分发下级设备.
