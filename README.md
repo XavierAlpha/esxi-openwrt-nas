@@ -1,9 +1,7 @@
-# esxi-openwrt
-官方版 openwrt + 自定义插件, 目的追求精简.
-
-NAS 的设置.
+# esxi-openwrt-nas 精简使用
+满足条件: 家庭路由,轻使用存储,Science Research(命令行 + /etc/init.d/yourserv 服务自启)
 
 - 设备: n5105 小主机
-- 虚拟系统：Vmware ESXi
-  - OpenWrt 的虚拟机
-  - NAS 的虚拟机
+- 虚拟系统：Vmware ESXi 8U2
+  - Offical OpenWrt
+  - Synology NAS
