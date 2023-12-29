@@ -11,6 +11,11 @@
   - docker
   - dockerd
   - luci-lib-ip
+
+  如果只想使用命令行, 则只需要安装
+  - dockerd
+  - docker
+  - docker-compose. 使用 docker compose 命令
 - kmod-tun (VPN tun interface need)
 
 :bell: 手动配置新增用户信息, 最小化安装:
