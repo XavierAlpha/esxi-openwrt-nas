@@ -184,3 +184,15 @@ openwrt 官方镜像默认使用 dropbear 提供的 ssh 功能(适用于小内�
 这里直接不使用 dropbear, 在 ui 上 删除 "Dropbear Instance". 在 System/Startup 中 disable dropbear.
 
 然后其他 ssh 操作和在 linux上相同.
+
+## 更改拥塞控制算法
+- kmod-tcp-bbr
+> 注: 安装完成后自动使用 bbr
+> 
+> 调度算法保持默认使用 fq_codel 即可
+```bash
+root@OpenWrt:~# cat /proc/sys/net/ipv4/tcp_available_congestion_control
+reno cubic bbr
+root@OpenWrt:~# cat /proc/sys/net/ipv4/tcp_congestion_control
+bbr
+```
