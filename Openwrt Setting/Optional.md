@@ -106,3 +106,123 @@ then open /etc/passwd, find your username line, change the /bin/ash to /bin/bash
 如果是很复杂情况, 例如 iptv 和 光猫之间经过了很多中间设备比如 交换机, 路由器, 软路由等等, 这种复杂场景的思路和上述一样, 即当你从机顶盒引出一根线接入第一个设备并打上 vlanid=301 的标识开始, 后续经过的各种中间设备必须认识且可传播 vlanid=301 的标识数据至后续设备, 如果有任何中间设备不具备认识和传播的能力那么最终 vlanid=301 的 iptv 的数据会在中间被抛弃, 从而失败到达光猫。
 
 什么样的中间设备可以实现这些功能, 最简单的上述例子中的硬路由通过指定一个端口打标 id=301. 或者, 机顶盒引出一根线到 vlan 交换机, 并为该接入端口打标 id=301, 或者软路由划分 vlan 同样指定一个端口打标 id=301 (并不倾向于这种方案, 因为软路由的网口有限且每个都很珍贵, 如果只用来实现简单的功能且有空闲的端口那可以忽略), 后续如果经过交换机, 则必须是可识别并传播 vlanid=301 的vlan交换机且需要正确配置, 后续如果是软路由则可桥接虚拟wan.301 和 lan.301 设备. 最终到达光猫上网口, 其中 vlanid=301 的 iptv 数据被光猫识别, 光猫处理该数据。
+
+### Adguardhome 配置
+Adguardhome 接管 dns, 需要设置监听地址, 如果设置 0.0.0.0, 则会监听包括 lan, wan 等所有 ipv4, ipv6 地址, 从安全方面考虑, 即使存在防火墙, 监听所有地址的行为并不优雅。从必要性来讲，Adguardhome 只提供给局域网设备的 dns, 故全部监听毫无意义, 故将需要监听的地址单独列出来, 通常包含 ipv4, ipv6。那这个地址该如何确定呢?
+
+- ipv4. ipv4 很简单, openwrt 中的 Adguardhome 兼顾了 dns 解析的功能, 故 openwrt 的网关地址需要监听, 例如 192.168.1.1
+- ipv6. ipv6 在家宽环境非固定, 跟随前缀变化, 但是 Link-local IPv6 Address 根据网卡 MAC 生成, 其是固定的, 所以 ipv6 使用例如 fe80::xxxx:xxxx:xxxx:xxxx 即可
+
+- localhost. 上述是对局域网设备的 dns 地址设备. 别忘了 openwrt 本身设备也需要 dns 查询, 其会使用 127.0.0.1, ::1 进行 dns 查询.
+
+综上, DNS 监听地址如下:
+```yaml
+dns:
+  bind_hosts:
+    - 127.0.0.1
+    - ::1
+    - 192.168.1.x
+    - fe80::xxxx:xxxx:xxxx:xxxx%br-lan
+  port: 53
+```
+> 注意: ipv6 处需要加上 '%br-lan' 接口信息
+
+**继续**
+
+监听以上地址不代表局域网设备 dns 请求可被劫持, 即在 openwrt lan 接口设置中 DHCP Server-Advanced Settings 的 DHCP-Options 填入 `6,192.168.1.x` 表示宣告局域网使用此 dns 地址. 同样, 宣告 ipv6 dns 在隔壁的 IPv6 Settings 中的 Announced IPv6 DNS servers 填入 `fe80::xxxx:xxxx:xxxx:xxxx` 即 openwrt ipv6 链路地址。大功告成。
+
+
+**Ad 实用小功能**
+在 Settings-Client Settings 中, 可以根据 IP 等自定义客户端信息以方便查看。
+
+### 安装 nginx
+在 openwrt 23.05.2 版本软件安装搜索处, 可以看到很多 "nginx", 主要包括 nginx, nginx-full, nginx-mod-*, nginx-ssl,还有 luci-\* 系列。
+
+> FROM [Openwrt docs](https://openwrt.org/docs/guide-user/luci/luci.essentials#luci_on_nginx)
+``` 
+LuCI on nginx
+For routers without significant space constraints running on snapshots/master or v19 or later, it is possible to install using nginx. LuCI on nginx is currently supported by using uwsgi as plain-cgi interpreter. You need to install one of this 2 variants of the LuCI meta-package:
+
+luci-nginx - Autoinstall nginx, uwsgi-cgi and the default config file to make luci work on nginx.
+luci-ssl-nginx - Autoinstall nginx-ssl, uwsgi-cgi and the default config file to make luci wok on nginx.
+It does also create a self-signed certificate for nginx and redirect http traffic to https by default. Note that even when using nginx, exposing the LuCI interface to the Internet or guest networks is not recommended.
+```
+
+- nginx-full 与 nginx-ssl 冲突会引起循环依赖问题, 在最新版中已经修正, 不包含各种 mod, 建议使用者自行单独安装。[see nginx: don't install all module for FULL variant #21502](https://github.com/openwrt/packages/pull/21502)
+
+> 注意这里仅安装 nginx-ssl。采取的方案是尽量不动 uhttpd。
+
+安装 nginx, 会和 uhttpd 默认 80,443 冲突, 故这里可在配置界面简单更改 uhttpd 的端口。
+
+安装 nginx-ssl 将会安装下列:
+- nginx-ssl
+- nginx-ssl-util
+- nginx-util
+
+如果使用 stream 模块则需额外安装
+- nginx-mod-stream
+
+并在 nginx.conf 中 `load_module /usr/lib/nginx/modules/ngx_stream_module.so;`
+
+**配置**
+默认安装 nginx 后, 会使用 luci 管理 一些配置, 查看 /etc/config/nginx 中可看到全局配置
+```
+config main global
+        option uci_enable 'true'
+```
+这里开启 luci 自动配置. 其会根据  /etc/nginx/uci.conf.template 每次启动时生成配置。
+
+一般情况, nginx 习惯使用 /etc/nginx/nginx.conf 配置文件, openwrt 中同样可以继续此习惯。将上述 'true' 改为 false, nginx 会不使用 uci 管理配置。这时需要自定义 nginx.conf。
+
+示例 nginx.conf:
+```conf
+load_module /usr/lib/nginx/modules/ngx_stream_module.so;
+
+user root;
+worker_processes  auto;
+
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+stream {
+    upstream dns {
+        zone dns 64k;
+        server 127.0.0.1:53;
+    }
+    # DoT server for decryption
+    server {
+        listen 853 ssl;
+        listen [::]:853 ssl;
+        ssl_certificate /xxx/fullchain.pem;
+        ssl_certificate_key /xxx/privkey.pem;
+        proxy_pass dns;
+    }
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+ 
+    log_format openwrt
+        '$request_method $scheme://$host$request_uri => $status'
+        ' (${body_bytes_sent}B in ${request_time}s) <- $http_referer';
+    
+    sendfile        on;
+    tcp_nopush      on;
+    tcp_nodelay     on;
+
+    keepalive_timeout  65;
+
+    client_max_body_size 128M;
+    large_client_header_buffers 2 1k;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+```
