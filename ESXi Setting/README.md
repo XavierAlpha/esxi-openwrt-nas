@@ -38,7 +38,8 @@ generic-ext4-combined-efi.vmdk openwrt-23.05.0-x86-64-generic-ext4-combined-efi-
 
 
 ## 创建 NAS 虚拟机
-> 黑群晖 引导方法 [From wjz304](https://github.com/wjz304/arpl-i18n)
+> 黑群晖 引导方法 ~~[From wjz304](https://github.com/wjz304/arpl-i18n)~~(过时)
+> 新的引导参考作者已经删除的 rr 23.11.x(资源自行寻找)
 
 wjz304 提供的是 img 镜像文件, 同样需要转化为 xx-thin.vmdk 才能再 ESXi中正确引导. 方法和上述相同.
 
