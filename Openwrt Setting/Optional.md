@@ -226,3 +226,175 @@ http {
     include /etc/nginx/conf.d/*.conf;
 }
 ```
+
+### N1 设备
+> 内存芯片RAM：K4B4G1646E ，4Gb DDR3-1866MHz，内存容量512MB；前后一共有4颗，总内存2GB
+> 
+> 闪存芯片ROM：KLM8G1GEME，8GB eMMC
+>
+> 网卡芯片：RTL8211F，千兆速率
+
+[Amlogic S905D ARM Cortex-A53](https://www.amlogic.cn/#Products/227/index.html)
+
+#### opkg
+一些虚拟设备的删除, (~~一般没必要~~)
+teql0 和 qos 相关, 删除 sched 相关即可去除.
+`kmod-dummy - 5.15.152-1` 和 dummy0 有关
+
+#### 软件源
+```sh
+# add your custom package feeds here
+#
+# src/gz example_feed_name http://www.example.com/path/to/files
+src/gz openwrt_core https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.3/targets/armsr/armv8/packages
+src/gz openwrt_base https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.3/packages/aarch64_generic/base
+src/gz openwrt_luci https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.3/packages/aarch64_generic/luci
+src/gz openwrt_packages https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.3/packages/aarch64_generic/packages
+src/gz openwrt_routing https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.3/packages/aarch64_generic/routing
+src/gz openwrt_telephony https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.3/packages/aarch64_generic/telephony
+```
+
+#### nginx
+一般情况下, 搜索并安装 nginx-ssl 即可, 但这里会有架构不兼容问题。
+
+在配置以上软件源后, 安装 nginx-ssl 但会报错 nginx-util 不兼容. 没关系, 此时使用 --force-depends 强制安装, 即使依赖失败, 当然这种情况下正常的通过 /etc/init.d/nginx 无法管理 nginx, 报错内容同样是 nginx-util 的兼容性问题.
+
+解决方法: 尝试使用 nginx -v, -t 可以发现其命令依然有效. 直接配置 nginx 后使用命令行 nginx, 发现其正常运行. 故适当修改 /etc/init.d/nginx 中和 nginx-util 相关的内容即可, 遂尝试如下:
+
+原内容:
+```sh
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2015 OpenWrt.org
+START=80
+USE_PROCD=1
+G_OPTS="daemon off;"
+NGINX_UTIL="/usr/bin/nginx-util"
+UCI_CONF_TEMPLATE="/etc/nginx/uci.conf.template"
+LATEST_UCI_CONF_VERSION="1.2"
+eval $("${NGINX_UTIL}" get_env)
+CONF=""
+nginx_check_luci_template() {
+        UCI_CONF_VERSION="$(sed -nr 's/# UCI_CONF_VERSION=(.*)/\1/p' $UCI_CONF_TEMPLATE)"
+
+        # No need to migrate already latest version
+        if [ "$UCI_CONF_VERSION" = "$LATEST_UCI_CONF_VERSION" ]; then
+                return
+        fi
+
+        # Fix wrong entry for the module.d include
+        if [ "$UCI_CONF_VERSION" = "1.1" ]; then
+                # Remove any entry
+                sed -i '/^include module\.d\/\*\.module;/d' $UCI_CONF_TEMPLATE
+                # Put the include before events {}
+                sed -i 's/events {/include module.d\/*.module;\n\nevents {/' $UCI_CONF_TEMPLATE
+        fi
+
+        if [ "$UCI_CONF_VERSION" != "$LATEST_UCI_CONF_VERSION" ]; then
+                sed -i "s/# UCI_CONF_VERSION=.*/# UCI_CONF_VERSION=$LATEST_UCI_CONF_VERSION/" $UCI_CONF_TEMPLATE
+        fi
+
+        if [ -z "$UCI_CONF_VERSION" ]; then
+                # Handle funny case with template with the include module but no version
+                if ! grep -q -e '^include module\.d/\*\.module;$' $UCI_CONF_TEMPLATE; then
+                        sed -i 's/events {/include module.d\/*.module;\n\nevents {/' $UCI_CONF_TEMPLATE
+                fi
+                echo "" >> $UCI_CONF_TEMPLATE
+                echo "# UCI_CONF_VERSION=1.2"  >> $UCI_CONF_TEMPLATE
+        fi
+}
+nginx_init() {
+        [ -z "${CONF}" ] || return # already called.
+
+        [ -d /var/log/nginx ] || mkdir -p /var/log/nginx
+        [ -d /var/lib/nginx ] || mkdir -p /var/lib/nginx
+
+        rm -f "$(readlink "${UCI_CONF}")"
+        ${NGINX_UTIL} init_lan
+
+        if [ -f $UCI_CONF_TEMPLATE ]; then
+                nginx_check_luci_template
+        fi
+
+        if [ -e "${UCI_CONF}" ]
+        then CONF="${UCI_CONF}"
+        else CONF="${NGINX_CONF}"
+        fi
+
+        local message
+        message="$(/usr/sbin/nginx -t -c "${CONF}" -g "${G_OPTS}" 2>&1)" ||
+        {
+                echo -e "${message}" | logger -t "nginx_init" -p "daemon.err"
+                logger -s -t "nginx_init" -p "daemon.err" "NOT using conf file!"
+                echo "show config to be used by: nginx -T -c '${CONF}'" >&2
+                exit 1
+        }
+
+        logger -t "nginx_init" -p "daemon.info" "using ${CONF} (the test is ok)"
+}
+start_service() {
+        nginx_init
+
+        procd_open_instance
+        procd_set_param command /usr/sbin/nginx -c "${CONF}" -g "${G_OPTS}"
+        procd_set_param stdout 1
+        procd_set_param stderr 1
+        procd_set_param file "${CONF}" "${CONF_DIR}*.crt" "${CONF_DIR}*.key" \
+                "${CONF_DIR}*.conf" "${CONF_DIR}*.locations"
+        procd_set_param respawn
+        procd_close_instance
+}
+reload_service() {
+        nginx_init
+
+        if [ "$(cat "/proc/$(cat "/var/run/nginx.pid")/cmdline")" = \
+             "nginx: master process /usr/sbin/nginx -c ${CONF} -g ${G_OPTS}" ]
+        then procd_send_signal nginx
+        else restart
+        fi
+}
+service_triggers() {
+        procd_add_raw_trigger acme.renew 5000 /etc/init.d/nginx reload
+}
+extra_command "relog" "Reopen log files (without reloading)"
+relog() {
+        [ -d /var/log/nginx ] || mkdir -p /var/log/nginx
+        procd_send_signal nginx '*' USR1
+}
+```
+
+发现 nginx 启动是需要 CONF_DIR CONF 两个环境变量, 而环境变量和 `eval $("${NGINX_UTIL}" get_env)` 相关, 故这里不依赖 nginx-util 获得, 主动修改这两个环境变量, `CONF="/etc/nginx/nginx.conf" CONF_DIR="/etc/nginx/conf.d/"`
+
+其他: 
+1. nginx_init 和 uci config 有关, 这里使用命令行管理 nginx, 故直接去除它
+2. service_triggers 和 acme 相关, 可自行处理, 但一般 acme 在证书更新时可配置主动对 nginx 进行重启, 故这里也可以去除
+3. 测试后发现 `procd_send_signal` 似乎在 n1 里无法使用, 显示 Command not found, 故这里直接将 reload 改为 restart 相同. (procd 中不设置 reload 好像就是 restart)
+```sh
+reload_service() {
+    restart
+}
+```
+4. relog 和 `procd_send_signal` 相关, 去除
+
+故最后配置非常简单,如下:
+```sh
+#!/bin/sh /etc/rc.common
+START=80
+USE_PROCD=1
+G_OPTS="daemon off;"
+CONF="/etc/nginx/nginx.conf"
+CONF_DIR="/etc/nginx/conf.d/"
+start_service() {
+        procd_open_instance
+        procd_set_param command /usr/sbin/nginx -c "${CONF}" -g "${G_OPTS}"
+        procd_set_param stdout 1
+        procd_set_param stderr 1
+        procd_set_param file "${CONF}" "${CONF_DIR}*.crt" "${CONF_DIR}*.key" \
+                "${CONF_DIR}*.conf" "${CONF_DIR}*.locations"
+        procd_set_param respawn
+        procd_close_instance
+}
+reload_service() {
+        restart
+}
+```
+修改后日常使用 /etc/init.d/nginx start, stop, restart, status 等管理 nginx. ~~够用了~~

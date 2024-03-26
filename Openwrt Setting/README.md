@@ -1,3 +1,5 @@
+> **其他可选项配置: Optional.md**
+
 # Openwrt 设置
 ## 首次进入系统
 设置 br-lan ip 地址
@@ -10,12 +12,12 @@
 - 修改源, 比如
 
 ```
-src/gz openwrt_core https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/targets/x86/64/packages
-src/gz openwrt_base https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/base
-src/gz openwrt_luci https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/luci
-src/gz openwrt_packages https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/packages
-src/gz openwrt_routing https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/routing
-src/gz openwrt_telephony https://mirrors.cloud.tencent.com/openwrt/releases/23.05.2/packages/x86_64/telephony
+src/gz openwrt_core https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.2/targets/x86/64/packages
+src/gz openwrt_base https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.2/packages/x86_64/base
+src/gz openwrt_luci https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.2/packages/x86_64/luci
+src/gz openwrt_packages https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.2/packages/x86_64/packages
+src/gz openwrt_routing https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.2/packages/x86_64/routing
+src/gz openwrt_telephony https://mirror.tuna.tsinghua.edu.cn/openwrt/releases/23.05.2/packages/x86_64/telephony
 ```
 
 - 主题, 比如 luci-app-argon
